@@ -24,9 +24,9 @@ namespace lab22_26_siaod
 
             dataGridView1.Rows[0].Cells[0].Value = true;
             dataGridView1.Rows[1].Cells[0].Value = true;
-            dataGridView1.Rows[2].Cells[0].Value = true;
-            dataGridView1.Rows[3].Cells[0].Value = true;
-            dataGridView1.Rows[4].Cells[0].Value = true;
+            dataGridView1.Rows[2].Cells[0].Value = false;
+            dataGridView1.Rows[3].Cells[0].Value = false;
+            dataGridView1.Rows[4].Cells[0].Value = false;
 
             dataGridView1.RowHeadersVisible = false;
         }
@@ -116,6 +116,79 @@ namespace lab22_26_siaod
             return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
         }
 
+        // Алгоритм однофазной сортировки простым слиянием
+        private (long comparisons, long assignments, long time) SimpleOnePhaseMergeSort(int[] a)
+        {
+            long comparisons = 0;
+            long assignments = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            int n = a.Length;
+
+            int[] b = new int[n];
+            int[] c = new int[n];
+            int[] d = new int[n];
+            int[] e = new int[n];
+
+            int bCount = 0, cCount = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (i % 2 == 0) b[bCount++] = a[i];
+                else c[cCount++] = a[i];
+                assignments++;
+            }
+
+            int seriesLength = 1;
+            bool directDir = true;
+
+            while (seriesLength < n)
+            {
+                if (directDir)
+                    MergePhase(b, c, bCount, cCount, d, e, out bCount, out cCount, seriesLength, ref comparisons, ref assignments);
+                else
+                    MergePhase(d, e, bCount, cCount, b, c, out bCount, out cCount, seriesLength, ref comparisons, ref assignments);
+
+                seriesLength *= 2;
+                directDir = !directDir;
+            }
+
+            int[] finalSrc = directDir ? b : d;
+            Array.Copy(finalSrc, a, n);
+            assignments += n;
+
+            stopwatch.Stop();
+            return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
+        }
+
+        // Вспомогательный метод для выполнения одной фазы слияния-распределения
+        private void MergePhase(int[] src1, int[] src2, int n1, int n2, int[] dest1, int[] dest2,
+                                out int d1Count, out int d2Count, int len, ref long comp, ref long assig)
+        {
+            d1Count = 0; d2Count = 0;
+            int i = 0, j = 0;
+            bool writeToFirst = true;
+
+            while (i < n1 || j < n2)
+            {
+                int limit1 = Math.Min(i + len, n1);
+                int limit2 = Math.Min(j + len, n2);
+                int[] currentDest = writeToFirst ? dest1 : dest2;
+                ref int currentCounter = ref (writeToFirst ? ref d1Count : ref d2Count);
+
+                while (i < limit1 && j < limit2)
+                {
+                    comp++;
+                    currentDest[currentCounter++] = (src1[i] <= src2[j]) ? src1[i++] : src2[j++];
+                    assig++;
+                }
+                while (i < limit1) { currentDest[currentCounter++] = src1[i++]; assig++; }
+                while (j < limit2) { currentDest[currentCounter++] = src2[j++]; assig++; }
+
+                writeToFirst = !writeToFirst;
+            }
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             // Если галочка снята — стираем результаты 
@@ -145,6 +218,17 @@ namespace lab22_26_siaod
                 dataGridView1.Rows[0].Cells[3].Value = result.assignments;
                 dataGridView1.Rows[0].Cells[4].Value = result.time + " мс";
                 dataGridView1.Rows[0].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
+            }
+
+            if ((bool)dataGridView1.Rows[1].Cells[0].Value)
+            {
+                int[] sortingArray = (int[])originalArray.Clone();
+                var result = SimpleOnePhaseMergeSort(sortingArray);
+
+                dataGridView1.Rows[1].Cells[2].Value = result.comparisons;
+                dataGridView1.Rows[1].Cells[3].Value = result.assignments;
+                dataGridView1.Rows[1].Cells[4].Value = result.time + " мс";
+                dataGridView1.Rows[1].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
             }
         }
 
