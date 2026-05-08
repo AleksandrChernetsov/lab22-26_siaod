@@ -24,7 +24,7 @@ namespace lab22_26_siaod
 
             dataGridView1.Rows[0].Cells[0].Value = true;
             dataGridView1.Rows[1].Cells[0].Value = true;
-            dataGridView1.Rows[2].Cells[0].Value = false;
+            dataGridView1.Rows[2].Cells[0].Value = true;
             dataGridView1.Rows[3].Cells[0].Value = false;
             dataGridView1.Rows[4].Cells[0].Value = false;
 
@@ -189,6 +189,71 @@ namespace lab22_26_siaod
             }
         }
 
+        // Алгоритм двухфазной сортировки естественным слиянием 
+        private (long comparisons, long assignments, long time) NaturalTwoPhaseMergeSort(int[] a)
+        {
+            long comparisons = 0;
+            long assignments = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            int n = a.Length;
+            int[] b = new int[n];
+            int[] c = new int[n];
+
+            while (true)
+            {
+                int bCount = 0, cCount = 0, i = 0;
+                bool toB = true;
+                int seriesCount = 0;
+
+                while (i < n)
+                {
+                    seriesCount++;
+                    if (toB)
+                    {
+                        b[bCount++] = a[i++]; assignments++;
+                        while (i < n && a[i] >= a[i - 1]) { comparisons++; b[bCount++] = a[i++]; assignments++; }
+                    }
+                    else
+                    {
+                        c[cCount++] = a[i++]; assignments++;
+                        while (i < n && a[i] >= a[i - 1]) { comparisons++; c[cCount++] = a[i++]; assignments++; }
+                    }
+                    if (i < n) comparisons++;
+                    toB = !toB;
+                }
+
+                if (seriesCount <= 1) break;
+
+                int aIdx = 0, bIdx = 0, cIdx = 0;
+                while (bIdx < bCount && cIdx < cCount)
+                {
+                    bool bEnd = false, cEnd = false;
+                    while (!bEnd && !cEnd)
+                    {
+                        comparisons++;
+                        if (b[bIdx] <= c[cIdx])
+                        {
+                            a[aIdx++] = b[bIdx++]; assignments++;
+                            if (bIdx >= bCount || b[bIdx] < b[bIdx - 1]) bEnd = true;
+                        }
+                        else
+                        {
+                            a[aIdx++] = c[cIdx++]; assignments++;
+                            if (cIdx >= cCount || c[cIdx] < c[cIdx - 1]) cEnd = true;
+                        }
+                    }
+                    while (!bEnd) { a[aIdx++] = b[bIdx++]; assignments++; if (bIdx >= bCount || b[bIdx] < b[bIdx - 1]) bEnd = true; }
+                    while (!cEnd) { a[aIdx++] = c[cIdx++]; assignments++; if (cIdx >= cCount || c[cIdx] < c[cIdx - 1]) cEnd = true; }
+                }
+                while (bIdx < bCount) { a[aIdx++] = b[bIdx++]; assignments++; }
+                while (cIdx < cCount) { a[aIdx++] = c[cIdx++]; assignments++; }
+            }
+            stopwatch.Stop();
+            return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             // Если галочка снята — стираем результаты 
@@ -229,6 +294,17 @@ namespace lab22_26_siaod
                 dataGridView1.Rows[1].Cells[3].Value = result.assignments;
                 dataGridView1.Rows[1].Cells[4].Value = result.time + " мс";
                 dataGridView1.Rows[1].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
+            }
+
+            if ((bool)dataGridView1.Rows[2].Cells[0].Value)
+            {
+                int[] sortingArray = (int[])originalArray.Clone();
+                var result = NaturalTwoPhaseMergeSort(sortingArray);
+
+                dataGridView1.Rows[2].Cells[2].Value = result.comparisons;
+                dataGridView1.Rows[2].Cells[3].Value = result.assignments;
+                dataGridView1.Rows[2].Cells[4].Value = result.time + " мс";
+                dataGridView1.Rows[2].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
             }
         }
 
