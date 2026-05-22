@@ -25,7 +25,7 @@ namespace lab22_26_siaod
             dataGridView1.Rows[0].Cells[0].Value = true;
             dataGridView1.Rows[1].Cells[0].Value = true;
             dataGridView1.Rows[2].Cells[0].Value = true;
-            dataGridView1.Rows[3].Cells[0].Value = false;
+            dataGridView1.Rows[3].Cells[0].Value = true;
             dataGridView1.Rows[4].Cells[0].Value = false;
 
             dataGridView1.RowHeadersVisible = false;
@@ -254,6 +254,96 @@ namespace lab22_26_siaod
             return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
         }
 
+        // Алгоритм однофазной сортировки естественным слиянием
+        private (long comparisons, long assignments, long time) NaturalOnePhaseMergeSort(int[] a)
+        {
+            long comparisons = 0;
+            long assignments = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            int n = a.Length;
+            int[] b = new int[n];
+            int[] c = new int[n];
+            int[] d = new int[n];
+            int[] e = new int[n];
+
+            int bCount = 0, cCount = 0, i = 0;
+            bool toB = true;
+            while (i < n)
+            {
+                int[] target = toB ? b : c;
+                ref int count = ref (toB ? ref bCount : ref cCount);
+
+                target[count++] = a[i++]; assignments++;
+                while (i < n && a[i] >= a[i - 1])
+                {
+                    comparisons++;
+                    target[count++] = a[i++];
+                    assignments++;
+                }
+                if (i < n) comparisons++;
+                toB = !toB;
+            }
+
+            bool directDir = true;
+            int totalRuns;
+
+            do
+            {
+                if (directDir)
+                    NaturalMergePhase(b, c, bCount, cCount, d, e, out bCount, out cCount, out totalRuns, ref comparisons, ref assignments);
+                else
+                    NaturalMergePhase(d, e, bCount, cCount, b, c, out bCount, out cCount, out totalRuns, ref comparisons, ref assignments);
+
+                directDir = !directDir;
+            } while (totalRuns > 1);
+
+            Array.Copy(directDir ? b : d, a, n);
+            assignments += n;
+
+            stopwatch.Stop();
+            return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
+        }
+
+        // Вспомогательный метод для однофазного естественного слияния
+        private void NaturalMergePhase(int[] src1, int[] src2, int n1, int n2, int[] dest1, int[] dest2,
+                                        out int d1Count, out int d2Count, out int totalRuns, ref long comp, ref long assig)
+        {
+            d1Count = 0; d2Count = 0; totalRuns = 0;
+            int i = 0, j = 0;
+            bool writeToFirst = true;
+
+            while (i < n1 || j < n2)
+            {
+                totalRuns++;
+                int[] target = writeToFirst ? dest1 : dest2;
+                ref int counter = ref (writeToFirst ? ref d1Count : ref d2Count);
+
+                bool run1End = i >= n1, run2End = j >= n2;
+
+                while (!run1End && !run2End)
+                {
+                    comp++;
+                    if (src1[i] <= src2[j])
+                    {
+                        target[counter++] = src1[i++]; assig++;
+                        run1End = (i >= n1 || src1[i] < src1[i - 1]);
+                    }
+                    else
+                    {
+                        target[counter++] = src2[j++]; assig++;
+                        run2End = (j >= n2 || src2[j] < src2[j - 1]);
+                    }
+                }
+
+                while (!run1End) { target[counter++] = src1[i++]; assig++; run1End = (i >= n1 || src1[i] < src1[i - 1]); }
+                while (!run2End) { target[counter++] = src2[j++]; assig++; run2End = (j >= n2 || src2[j] < src2[j - 1]); }
+
+                writeToFirst = !writeToFirst;
+            }
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             // Если галочка снята — стираем результаты 
@@ -305,6 +395,17 @@ namespace lab22_26_siaod
                 dataGridView1.Rows[2].Cells[3].Value = result.assignments;
                 dataGridView1.Rows[2].Cells[4].Value = result.time + " мс";
                 dataGridView1.Rows[2].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
+            }
+
+            if ((bool)dataGridView1.Rows[3].Cells[0].Value)
+            {
+                int[] sortingArray = (int[])originalArray.Clone();
+                var result = NaturalOnePhaseMergeSort(sortingArray);
+
+                dataGridView1.Rows[3].Cells[2].Value = result.comparisons;
+                dataGridView1.Rows[3].Cells[3].Value = result.assignments;
+                dataGridView1.Rows[3].Cells[4].Value = result.time + " мс";
+                dataGridView1.Rows[3].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
             }
         }
 
