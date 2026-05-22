@@ -26,7 +26,7 @@ namespace lab22_26_siaod
             dataGridView1.Rows[1].Cells[0].Value = true;
             dataGridView1.Rows[2].Cells[0].Value = true;
             dataGridView1.Rows[3].Cells[0].Value = true;
-            dataGridView1.Rows[4].Cells[0].Value = false;
+            dataGridView1.Rows[4].Cells[0].Value = true;
 
             dataGridView1.RowHeadersVisible = false;
         }
@@ -344,6 +344,83 @@ namespace lab22_26_siaod
             }
         }
 
+        // Внешняя сортировка методом поглощения
+        private (long comparisons, long assignments, long time) AbsorptionSort(int[] a, int percent)
+        {
+            long comparisons = 0;
+            long assignments = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            double memoryPart = percent / 100.0;
+            int memorySize = (int)Math.Ceiling(memoryPart * a.Length);
+            if (memorySize < 1) memorySize = 1;
+
+            int roundsCount = (int)Math.Ceiling((double)a.Length / memorySize);
+            int start = a.Length - 1;
+
+            int[] op = new int[memorySize];
+
+            int currentChunkSize = Math.Min(start + 1, memorySize);
+            for (int i = 0; i < currentChunkSize && start >= 0; i++)
+            {
+                op[i] = a[start--];
+                assignments++;
+            }
+
+            Array.Sort(op, 0, currentChunkSize);
+
+            int writeIndex = a.Length - currentChunkSize;
+            for (int i = 0; i < currentChunkSize; i++)
+            {
+                a[writeIndex++] = op[i];
+                assignments++;
+            }
+
+            for (int i = 1; i < roundsCount; i++)
+            {
+                currentChunkSize = (int)Math.Min(start + 1, memorySize);
+
+                for (int j = 0; j < currentChunkSize && start >= 0; j++)
+                {
+                    op[j] = a[start - j];
+                    assignments++;
+                }
+
+                Array.Sort(op, 0, currentChunkSize);
+
+                int leftIndex = 0;
+                int rightIndex = start + 1;
+                int aIndex = start - currentChunkSize + 1;
+
+                while (leftIndex < currentChunkSize && rightIndex < a.Length)
+                {
+                    comparisons++;
+                    if (op[leftIndex] < a[rightIndex])
+                    {
+                        a[aIndex++] = op[leftIndex++];
+                        assignments++;
+                    }
+                    else
+                    {
+                        a[aIndex++] = a[rightIndex++];
+                        assignments++;
+                    }
+                }
+
+                while (leftIndex < currentChunkSize)
+                {
+                    a[aIndex++] = op[leftIndex++];
+                    assignments++;
+                }
+
+                start -= currentChunkSize;
+            }
+
+            stopwatch.Stop();
+            return (comparisons, assignments, stopwatch.ElapsedMilliseconds);
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             // Если галочка снята — стираем результаты 
@@ -406,6 +483,18 @@ namespace lab22_26_siaod
                 dataGridView1.Rows[3].Cells[3].Value = result.assignments;
                 dataGridView1.Rows[3].Cells[4].Value = result.time + " мс";
                 dataGridView1.Rows[3].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
+            }
+
+            if ((bool)dataGridView1.Rows[4].Cells[0].Value)
+            {
+                int[] sortingArray = (int[])originalArray.Clone();
+                int percent = (int)numericUpDown2.Value;
+                var result = AbsorptionSort(sortingArray, percent);
+
+                dataGridView1.Rows[4].Cells[2].Value = result.comparisons;
+                dataGridView1.Rows[4].Cells[3].Value = result.assignments;
+                dataGridView1.Rows[4].Cells[4].Value = result.time + " мс";
+                dataGridView1.Rows[4].Cells[5].Value = IsSorted(sortingArray) ? "Да" : "Нет";
             }
         }
 
